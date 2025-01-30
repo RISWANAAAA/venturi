@@ -132,8 +132,12 @@ hand->buzz();
 
     ui->progressBar_2->setRange(0, 100);
     current(1);
-    on_Tune_but_clicked();
+    switchmodes();
 
+    on_Tune_but_clicked();
+    connect(this,&prime::sendmode,tune,&tuning::rx_modes);
+    emit sendmode(ui->comboBox->currentText());
+    //qDebug()<<"the text is emitted"<<ui->comboBox->currentText();
 
 }
 
@@ -587,6 +591,69 @@ void prime::setLastSelectedValue() {
     // Close and clean up the database connection
     db.close();
     QSqlDatabase::removeDatabase("connection1");
+}
+
+void prime::switchmodes()
+{
+    // Specify the file path
+    QString filePath = ".allmodes.txt";
+
+    // Check if the file exists and is readable
+    QFileInfo fileInfo(filePath);
+    if (!fileInfo.exists() || !fileInfo.isReadable()) {
+        qDebug() << "File does not exist or is not readable:" << filePath;
+        return;
+    }
+
+    qDebug() << "Attempting to open file at path:" << filePath;
+
+    // Create a QFile object with the specified file path
+    QFile file(filePath);
+
+    // Try opening the file
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Could not open file for reading. Error:" << file.errorString();
+        return;
+    }
+     qDebug()<<"the file is sccessfully open";
+    // Create a QTextStream object to read text from the file
+    QTextStream in(&file);
+    in.setCodec("UTF-8");  // Adjust encoding if necessary
+
+    // Read the content from the file
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();  // Read each line and remove leading/trailing whitespaces
+
+        // Skip empty lines or comments (lines starting with //)
+        if (line.isEmpty() || line.startsWith("//")) {
+            continue;
+        }
+
+        // Add the mode to the list
+        modes.append(line);
+    }
+
+    // Update the combo box with the modes
+      ui->comboBox->clear();  // Clear existing items
+      ui->comboBox->addItem(modes);  // Add the modes from the file
+
+      emit sendmode(modes);
+      qDebug() << "The current text from the prime screen to tuning screen:" << modes;
+
+  // Handle the selected mode
+  QString currentMode = ui->comboBox->currentText();
+  if (currentMode == "PHAPeristaltic" || currentMode == "PHAVenturi") {
+      qDebug() << "The current text from the prime screen to tuning screen:" << currentMode;
+  }
+
+  // Allow adding a new mode dynamically
+  QString newMode = "YourNewMode";  // Replace this with a user-input value if needed
+  if (!ui->comboBox->findText(newMode)) {
+      ui->comboBox->addItem(newMode);  // Add the new mode if it's not already present
+      qDebug() << "Added new mode to the combo box:" << newMode;
+      emit sendmode(currentMode);
+
+  }
 }
 
 void prime::serialnumber() {

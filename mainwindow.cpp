@@ -2496,6 +2496,7 @@ vus4=ui->us4vacmode->text();
   QString vit=ui->vitmode->text();
   QString vvac=ui->vitvacmode->text();
   //QString us2on=ui->us2onoff->text();
+  QString SelectedMode=ui->comboBox->currentText();
 
     switch(butname)
     {
@@ -2602,7 +2603,9 @@ vus4=ui->us4vacmode->text();
                        int pro=readsensorvalue();
                        ui->label_8->setText(QString::number(pro));
                    motoroff();
-
+                   if(SelectedMode == "PHAVenturi"){
+                       handler->convert_dac(0X31,0);
+                   }
                 ui->label_7->setText("0");
           handler->speaker_off();
           beepsound(0);
@@ -2634,6 +2637,9 @@ vus4=ui->us4vacmode->text();
                   handler->phaco_off();
                 //  handler->fs_count(0);
                  us1poweron=false;
+                 if(SelectedMode == "PHAVenturi"){
+                     handler->convert_dac(0X31,0);
+                 }
   beepsound(1);
   flag1 = true;
             }
@@ -2650,9 +2656,8 @@ vus4=ui->us4vacmode->text();
                 handler->phaco_off();
                // handler->fs_count(0);
                 us1poweron= false;
-                if(vus1=="Panel" ){
+                if(vus1=="Panel" && SelectedMode == "PHAPeristaltic"){
                     int nonlinear_prevac=readsensorvalue();
-                    qDebug()<<nonlinear_prevac<<"us1 mode from 2nd pos panel mode";
                     ui->label_8->setText(QString::number(nonlinear_prevac));
                     if(nonlinear_prevac <=  vacline){
                      motoron(ui->lineEdit_56);
@@ -2681,6 +2686,27 @@ vus4=ui->us4vacmode->text();
                       motoroff();
                   }
                 }
+                else if(vus1=="Panel" && SelectedMode =="PHAVenturi"){
+                    int nsensor=readsensorvalue();
+                                    int sensorcontrol=std::min(nsensor,vacline);
+
+                                   handler->convert_dac(0X31,vacline);
+
+                             ui->label_8->setText(QString::number(sensorcontrol));
+                             if(speakeronoff == "Speaker ON"){
+                          handler->speaker_on(nsensor,1,0,0);
+                             }else{
+                                 handler->speaker_off();
+                             }
+                             if(nsensor>sensorcontrol){
+                                 ui->label_8->setText(QString::number(vacline));
+                                 if(speakeronoff == "Speaker ON"){
+                                handler->speaker_on(sensorcontrol,0,0,1);
+                                 }else{
+                                     handler->speaker_off();
+                                 }
+                             }
+                 }
                 flag1 = true; // Reset flag
             }
             else if (range >=(nfpzero+nfpone+nfptwo) && range < (nfpzero+nfpone+nfptwo+nfpthree)) {
@@ -2735,7 +2761,7 @@ vus4=ui->us4vacmode->text();
                  }
                 }
 
-if(vus1 == "Panel"){
+if(vus1 == "Panel" && SelectedMode == "PHAPeristaltic"){
      int nonlinear_prevac=readsensorvalue();
                             //  int nonlinear_vac = std::min(nonlinear_prevac, vacline);
      ui->label_8->setText(QString::number(nonlinear_prevac));
@@ -2776,11 +2802,48 @@ if(vus1 == "Panel"){
                               }
 
 }
+else if(vus1=="Panel" && SelectedMode =="PHAVenturi"){
+    int nsensor=readsensorvalue();
 
+    int sensorcontrol=std::min(nsensor,vacline);
+
+   handler->convert_dac(0X31,vacline);
+
+ui->label_8->setText(QString::number(sensorcontrol));
+if(us1powmode == "Ocuburst"){
+    handler->pdm_mode(CONTINOUS);
+}else if(us1powmode == "Ocupulse" ){
+    handler->pdm_mode(CONTINOUS);
+}
+if(speakeronoff == "Speaker ON"){
+handler->speaker_on(nsensor,1,0,0);
+}else{
+    handler->speaker_off();
+}
+if(nsensor>=sensorcontrol){
+    ui->label_8->setText(QString::number(vacline));
+
+    if(speakeronoff == "Speaker ON"){
+    handler->speaker_on(0,0,0,1);
+    }else{
+        handler->speaker_off();
+    }
+    if(us1powmode == "Ocuburst"){
+        handler->pdm_mode(SINGLE_BURST);
+        handler->phaco_on(range);
+        handler->phaco_power(100);
+    }else if(us1powmode == "Ocupulse" ){
+        handler->pdm_mode(PULSE_MODE);
+      nOcuPulseCount = ui->lineEdit_77->text().toInt();
+        handler->pulse_count(nOcuPulseCount);
+    }
+}
  }
-
+            }
   }
         if ((us1 == "Surgeon")||( vus1 == "Surgeon")) {
+            int nsensor=readsensorvalue();
+            int actual_vacuum;
             if (range > 0 && range < nfpzero) {
                 ui->pushButton_42->setText("0");
                 ui->dial_2->setValue(range);
@@ -2805,6 +2868,10 @@ if(vus1 == "Panel"){
                 beepsound(0);
                 int pro = readsensorvalue();
                  ui->label_8->setText(QString::number(pro));
+                 if(SelectedMode == "PHAVenturi"){
+                     handler->convert_dac(0X31,0);
+                 }
+
                 us1poweron=false;
                 flag1 = true; // Reset flag
 
@@ -2837,6 +2904,9 @@ if(vus1 == "Panel"){
                     handler->speaker_off();
                 }
                 us1poweron=false;
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
 
                 beepsound(1);
 
@@ -2845,65 +2915,90 @@ if(vus1 == "Panel"){
             } else if (range >= (nfpzero + nfpone) && range < (nfpzero + nfpone + nfptwo)) {
                 // Position 2 behavior
                 ui->pushButton_42->setText("2");
-                //footpedalbeep();
                 ui->dial_2->setValue(range);
                 ventonus1 = false;
 
                 handler->pinchvalve_on();
-               // handler->safetyvent_off();
                 ui->CI5_5->setStyleSheet(styleSheet3);
-                if(vus1=="Surgeon"){
-                        const int MIN_RANGE = nfpzero + nfpone;
-                        const int MAX_RANGE =nfpzero + nfpone + nfptwo;
-                        int divi =  MAX_RANGE-MIN_RANGE ; // Divider
-                        int calibration = range - MIN_RANGE; // Calibration value
 
-                        if (divi != 0) {
-                            double final = static_cast<double>( vacline) / static_cast<double>(divi);
-                            int presetvac = static_cast<int>(std::round(calibration * final));
-                            int pro = readsensorvalue();
-                             ui->label_8->setText(QString::number(pro));
-                             if(speakeronoff == "Speaker ON"){
-                             handler->speaker_on(pro,1,0,0);
-                             }else{
-                                 handler->speaker_off();
-                             }
-                             ui->label_8->setText(QString::number(pro));
+                if (vus1 == "Surgeon" && SelectedMode =="PHAPeristaltic") {
+                    const int MIN_RANGE = nfpzero + nfpone; // 2048
+                    const int MAX_RANGE = nfpzero + nfpone + nfptwo; // 3072
+                    int divi = MAX_RANGE - MIN_RANGE; // 1024
+                    int calibration = range - MIN_RANGE; // 952 for range = 3000
 
-                             if(pro<=presetvac){
-                                  motoron(ui->lineEdit_56);
+                    if (divi != 0) {
+                        double final = static_cast<double>(vacline) / static_cast<double>(divi); // 0.34
+                        int presetvac = static_cast<int>(std::round(calibration * final)); // 323
 
-                             }
-//                             if (pro < presetvac) {
-//                                 motoron(ui->lineEdit_56);
-//                                if (!motorus1) {
-//                                    motoron(ui->lineEdit_56);
-//                                    motorus1 = true;
-//                                }
-//                            } else if (motorus1) {
-//                                motoroff();
-//                                motorus1 = false;
-//                            }
-                             if(pro>= vacline){
-                                  pro=static_cast<int>( vacline);
-                                   //speedofthelabe(ui->label_8);
-                                  motoroff();
-                                   ui->label_8->setText(QString::number(pro));
-                                   if(speakeronoff == "Speaker ON"){
-                                   handler->speaker_on(0,0,0,1);
-                                   }
-                                   else{
-                                       handler->speaker_off();
-                                   }
+                        int pro = readsensorvalue(); // Read actual vacuum sensor value
 
 
-                      }
-                             if(pro ==us1reachedvac){
-                                 motoroff();
-                             }
+
+                        // Update Vacuum Display
+                        ui->label_8->setText(QString::number(pro));
+
+                        // Motor Control Based on Sensor Value
+                        if (pro < presetvac) {
+                            motoron(ui->lineEdit_56);
+                            motorus1 = true;
+                        } else {
+                            motoroff();
+                            motorus1 = false;
                         }
-          }
 
+                        // Ensure Vacuum Doesn't Exceed Limits
+                        if (pro >= vacline) {
+                            pro = static_cast<int>(vacline); // Cap to vacline
+                            ui->label_8->setText(QString::number(pro));
+                            motoroff();
+                            handler->speaker_on(0, 0, 0, 1); // Feedback
+                        }
+
+                        // Turn Off Motor if Reached Specific Vacuum
+                        if (pro == us1reachedvac) {
+                            motoroff();
+                            motorus1 = false;
+                        }
+                    }
+                }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone;
+                                   const int MAX_RANGE = nfpzero+nfpone+nfptwo;
+                                   int divi = MAX_RANGE - MIN_RANGE;
+                                   int calibration = range - MIN_RANGE;
+
+                                   if (divi != 0) {
+                                       double final = static_cast<double>(vacline) / static_cast<double>(divi);
+                                       int presetvac = static_cast<int>(std::round(calibration * final));
+                                       int pro = readsensorvalue();
+                                       ui->label_8->setText(QString::number(pro));
+                                       // Speaker control
+                                       if (speakeronoff == "Speaker ON") {
+                                           handler->speaker_on(pro, 1, 0, 0);
+                                       } else {
+                                           handler->speaker_off();
+                                       }
+                                       presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                       if (pro < presetvac) {
+                                          handler->convert_dac(0X31,presetvac);
+                                       }
+                                       if (pro >= vacline) {
+                                           pro = static_cast<int>(vacline);
+                                           ui->label_8->setText(QString::number(pro));
+                                           if (speakeronoff == "Speaker ON") {
+                                               handler->speaker_on(pro, 1, 0, 0);
+                                           } else {
+                                               handler->speaker_off();
+                                           }
+
+                                       }
+                               }
+                }
+
+
+                // Calculate the range for the third phase
 
                 handler->phaco_off();
                 handler->phaco_power(0);
@@ -2962,7 +3057,6 @@ if(vus1 == "Panel"){
  // Ensure this is called once, when the timer should start
  if (!elapsedTimer->isValid()) {
      elapsedTimer->start();
-     qDebug() << "Timer started!";
  }
  updateTimes(pow1,ui->elapsed_time,ui->elapsed_time_2);
 
@@ -2974,72 +3068,121 @@ if(vus1 == "Panel"){
                     handler->phaco_power(0);
                  }
                 }
-                if (vus1 == "Surgeon") {
+                if (vus1 == "Surgeon" && SelectedMode =="PHAPeristaltic") {
                     const int MIN_RANGE = nfpzero + nfpone + nfptwo;
                     const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree;
                     int divi = MAX_RANGE - MIN_RANGE; // Divider
                     int calibration = range - MIN_RANGE; // Calibration value
-                    if(us1powmode == "Ocuburst"){
-                        handler->pdm_mode(CONTINOUS);
-                    }else if(us1powmode == "Ocupulse" ){
+
+                    // Handle power modes
+                    if (us1powmode == "Ocuburst" || us1powmode == "Ocupulse") {
                         handler->pdm_mode(CONTINOUS);
                     }
+
                     if (divi != 0) {
                         double final = static_cast<double>(vacline) / static_cast<double>(divi);
                         int presetvac = static_cast<int>(std::round(calibration * final));
-                        int pro = readsensorvalue();
-                        if(speakeronoff== "Speaker ON"){
-                        handler->speaker_on(pro, 1, 0, 0);
-}else{
+                        int pro = readsensorvalue(); // Read actual vacuum sensor value
+
+                        // Speaker control
+                        if (speakeronoff == "Speaker ON") {
+                            handler->speaker_on(pro, 1, 0, 0);
+                        } else {
                             handler->speaker_off();
                         }
-                    /*    // Motor control based on vacuum level
-                        if (pro < presetvac) {
-                            if (!motorus1) {
-                                motoron(ui->lineEdit_56);
-                                motorus1 = true;
-                            }
-                        }*/
-                        ui->label_8->setText(QString::number(pro));
 
-                        if(pro<=presetvac){
+                        // Motor control based on vacuum level
+                        if (pro < presetvac) {
                             motoron(ui->lineEdit_56);
-                        }
-                        else if (pro > vacline) {
+                            motorus1 = true;
+                        } else if (pro > vacline) {
+                            // Cap vacuum level and update UI
                             pro = static_cast<int>(vacline);
                             ui->label_8->setText(QString::number(pro));
                             motoroff();
-                            if(us1powmode == "Ocuburst"){
+
+                            // Handle power mode actions
+                            if (us1powmode == "Ocuburst") {
                                 handler->pdm_mode(SINGLE_BURST);
                                 handler->phaco_on(range);
                                 handler->phaco_power(100);
-                            }else if(us1powmode == "Ocupulse" ){
+                            } else if (us1powmode == "Ocupulse") {
                                 handler->pdm_mode(PULSE_MODE);
-                              nOcuPulseCount = ui->lineEdit_77->text().toInt();
+                                nOcuPulseCount = ui->lineEdit_77->text().toInt();
                                 handler->pulse_count(nOcuPulseCount);
                             }
-                           if(speakeronoff == "Speaker ON"){
-                            handler->speaker_on(0, 0, 0, 1);
-                           }else{
-                               handler->speaker_off();
-                           }
 
-                            // Keep motor running continuously
+                            // Feedback with speaker
+                            if (speakeronoff == "Speaker ON") {
+                                handler->speaker_on(0, 0, 0, 1);
+                            } else {
+                                handler->speaker_off();
+                            }
+
+                            // Continuous motor operation
                             if (!motorus1) {
                                 motoron(ui->lineEdit_56);
                                 motorus1 = true;
                             }
-                            us1reachedvac=pro;
 
+                            us1reachedvac = pro;
                         }
+
                     }
                 }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone+nfptwo;
+                                    const int MAX_RANGE =nfpzero+nfpone+nfptwo+nfpthree;
+                                    int divi = MAX_RANGE - MIN_RANGE;
+                                    int calibration = range - MIN_RANGE;
 
-         // qDebug()<<"the final of us1 mode and vac mode is"<<us1 <<vus1;
+                                    if (divi != 0) {
+                                        double final = static_cast<double>(vacline) / static_cast<double>(divi);
+                                        int presetvac = static_cast<int>(std::round(calibration * final));
+                                        int pro = readsensorvalue();
+                                        ui->label_8->setText(QString::number(pro));
+                                        // Speaker control
+                                        if (us1powmode == "Ocuburst" || us1powmode == "Ocupulse") {
+                                            handler->pdm_mode(CONTINOUS);
+                                        }
+                                        if (speakeronoff == "Speaker ON") {
+                                            handler->speaker_on(pro, 1, 0, 0);
+                                        } else {
+                                            handler->speaker_off();
+                                        }
+                                        presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                        if (pro < presetvac) {
+                                         handler->convert_dac(0X31,presetvac);
+                                        }
+
+                                        if (pro >= vacline) {
+                                            pro = static_cast<int>(vacline);
+                                            ui->label_8->setText(QString::number(pro));
+                                            // Handle power mode actions
+                                            if (us1powmode == "Ocuburst") {
+                                                handler->pdm_mode(SINGLE_BURST);
+                                                handler->phaco_on(range);
+                                                handler->phaco_power(100);
+                                            } else if (us1powmode == "Ocupulse") {
+                                                handler->pdm_mode(PULSE_MODE);
+                                                nOcuPulseCount = ui->lineEdit_77->text().toInt();
+                                                handler->pulse_count(nOcuPulseCount);
+                                            }
+
+                                            // Feedback with speaker
+                                            if (speakeronoff == "Speaker ON") {
+                                                handler->speaker_on(0, 0, 0, 1);
+                                            } else {
+                                                handler->speaker_off();
+                                            }
+
+                                        }
+                                }
+                }
 
 
-            }
-
+}
         }
 
 
@@ -3083,6 +3226,9 @@ if(vus1 == "Panel"){
                    motoroff();
 
                 ui->label_92->setText("0");
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
 
                 beepsound(0);
                 flag1 = true; // Reset flag
@@ -3113,6 +3259,10 @@ if(vus1 == "Panel"){
                   handler->phaco_off();
                 //  handler->fs_count(0);
                  us2poweron=false;
+                 if(SelectedMode == "PHAVenturi"){
+                     handler->convert_dac(0X31,0);
+                 }
+
                  beepsound(1);
 flag1 = true;
             }
@@ -3126,7 +3276,7 @@ flag1 = true;
                 handler->pinchvalve_on();
                 //handler->safetyvent_off();
                 //footpedalbeep();
- if(vus2=="Panel" ){
+ if(vus2=="Panel" &&SelectedMode == "PHAPeristaltic"){
      int nonlinear_prevac=readsensorvalue();
      if(nonlinear_prevac <=  us2vacline){
        ui->label_93->setText(QString::number(nonlinear_prevac));
@@ -3149,6 +3299,28 @@ flag1 = true;
    if(us2reachedvac == us2vacline){
        motoroff();
    }
+ }
+ else if(vus2=="Panel" && SelectedMode =="PHAVenturi"){
+     int nsensor=readsensorvalue();
+                                 int sensorcontrol=std::min(nsensor,us2vacline);
+
+                                handler->convert_dac(0X31,us2vacline);
+
+                          ui->label_93->setText(QString::number(sensorcontrol));
+                          if(speakeronoff == "Speaker ON"){
+                       handler->speaker_on(nsensor,1,0,0);
+                          }else{
+                              handler->speaker_off();
+                          }
+                          if(nsensor>=sensorcontrol){
+                              ui->label_93->setText(QString::number(us2vacline));
+                              if(speakeronoff == "Speaker ON"){
+                             handler->speaker_on(us2vacline,0,0,1);
+                              }else{
+                                  handler->speaker_off();
+                              }
+                          }
+
  }
                     handler->freq_count(0);
                     handler->phaco_off();
@@ -3203,6 +3375,42 @@ if(vus2=="Panel"){
                                  us2reachedvac=nonlinear_prevac;
                              }
 }
+else if(vus2=="Panel" && SelectedMode =="PHAVenturi"){
+    int nsensor=readsensorvalue();
+                                int sensorcontrol=std::min(nsensor,us2vacline);
+
+                               handler->convert_dac(0X31,us2vacline);
+
+                         ui->label_93->setText(QString::number(sensorcontrol));
+                         if(us2powmode == "Ocuburst"){
+                             handler->pdm_mode(CONTINOUS);
+                         }else if(us2powmode == "Ocupulse" ){
+                             handler->pdm_mode(CONTINOUS);
+                         }
+                         if(speakeronoff == "Speaker ON"){
+                        handler->speaker_on(nsensor,1,0,0);
+                         }else{
+                             handler->speaker_off();
+                         }
+                         if(nsensor>=sensorcontrol){
+                             ui->label_93->setText(QString::number(us2vacline));
+                           if(speakeronoff == "Speaker ON"){
+                           handler->speaker_on(0,0,0,1);
+                           }else{
+                               handler->speaker_off();
+                           }
+                           if(us2powmode == "Ocuburst"){
+                               handler->pdm_mode(SINGLE_BURST);
+                               handler->phaco_on(range);
+                               handler->phaco_power(100);
+                           }else if(us2powmode == "Ocupulse" ){
+                               handler->pdm_mode(PULSE_MODE);
+                             nOcuPulseCount = ui->lineEdit_77->text().toInt();
+                               handler->pulse_count(nOcuPulseCount);
+                           }
+                         }
+
+}
 if(us2 == "Panel"){
                if(!us2poweron && text == "ON" ){
                      //  handler->fs_count(range);
@@ -3233,7 +3441,7 @@ if(us2 == "Panel"){
                        // Ensure this is called once, when the timer should start
                        if (!elapsedTimer->isValid()) {
                            elapsedTimer->start();
-                           qDebug() << "Timer started!";
+                          // qDebug() << "Timer started!";
                        }
 
                        updateTimes(pow2, ui->elapsed_time, ui->elapsed_time_2);
@@ -3247,6 +3455,8 @@ beepsound(3);
 
   }
         if ((us2 == "Surgeon")||( vus2 == "Surgeon")) {
+            int nsensor=readsensorvalue();
+            int actual_vacuum;
             if (range > 0 && range < nfpzero) {
                 ui->pushButton_42->setText("0");
                 ui->dial_2->setValue(range);
@@ -3266,6 +3476,9 @@ beepsound(3);
                  handler->phaco_power(0);
                  handler->freq_count(0);
                      handler->fs_count_limit(nfpzero+nfpone+nfptwo);
+                     if(SelectedMode == "PHAVenturi"){
+                         handler->convert_dac(0X31,0);
+                     }
 
                      int pro=readsensorvalue();
                      ui->label_93->setText(QString::number(pro));
@@ -3282,6 +3495,9 @@ beepsound(3);
                 //footpedalbeep();
                 ui->dial_2->setValue(range);
                 handler->pinchvalve_on();
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
 
                 if(ventonus2==false){
                     handler->safetyvent_on();
@@ -3320,53 +3536,81 @@ beepsound(3);
                 handler->pinchvalve_on();
                // handler->safetyvent_off();
                 ui->CI5_5->setStyleSheet(styleSheet3);
-        if(vus2=="Surgeon"){
-                const int MIN_RANGE = nfpzero + nfpone;
-                const int MAX_RANGE =nfpzero + nfpone + nfptwo;
-                int divi =  MAX_RANGE-MIN_RANGE ; // Divider
-                int calibration = range - MIN_RANGE; // Calibration value
+                if (vus2 == "Surgeon" && SelectedMode == "PHAPeristaltic") {
+                    const int MIN_RANGE = nfpzero + nfpone; // Example: 2048
+                    const int MAX_RANGE = nfpzero + nfpone + nfptwo; // Example: 3072
+                    int divi = MAX_RANGE - MIN_RANGE; // Example: 1024
+                    int calibration = range - MIN_RANGE; // Example: 3000 - 2048 = 952
 
-                if (divi != 0) {
-                    double final = static_cast<double>( us2vacline) / static_cast<double>(divi);
-                    int presetvac = static_cast<int>(std::round(calibration * final));
-                    int pro = readsensorvalue();
-                     ui->label_93->setText(QString::number(pro));
-                     if(speakeronoff == "Speaker ON"){
-                     handler->speaker_on(pro,1,0,0);
-                     }else{
-                         handler->speaker_off();
-                     }
-                     if (pro <= presetvac) {
-                         motoron(ui->lineEdit_59);
-//                        if (!motorus2) {
-//                            motoron(ui->lineEdit_59);
-//                            motorus2 = true;
-//                        }
-//                    } else if (motorus2) {
-//                        motoroff();
-//                        motorus2 = false;
-//                    }
-                     }
-                     if(pro> us2vacline){
-                         motoroff();
-                          pro=static_cast<int>( us2vacline);
-                           //speedofthelabe(ui->label_8);
-                           ui->label_93->setText(QString::number(us2vacline));
-                           if(speakeronoff == "Speaker ON"){
-                           handler->speaker_on(0,0,0,1);
-                           }
-                           else{
-                               handler->speaker_off();
-                           }
+                    if (divi != 0) {
+                        double final = static_cast<double>(us2vacline) / static_cast<double>(divi); // Example: 350 / 1024
+                        int presetvac = static_cast<int>(std::round(calibration * final)); // Example: 952 * 0.34 = 323
+
+                        int pro = readsensorvalue(); // Get sensor value
 
 
-              }
+                        // Speaker Logic
+                        if (speakeronoff == "Speaker ON") {
+                            handler->speaker_on(pro, 1, 0, 0); // Adjust speaker as per sensor value
+                        } else {
+                            handler->speaker_off();
+                        }
+                        ui->label_93->setText(QString::number(pro)); // Update vacuum value in UI
 
-                     if(pro ==us2reachedvac){
-                         motoroff();
-                     }
+                        // Motor Control Based on Sensor Value
+                        if (pro <= presetvac) {
+                            motoron(ui->lineEdit_59); // Turn on motor
+                            motorus2=true;
+                        } else {
+                            motoroff(); // Turn off motor
+                            motorus2=false;
+                        }
+
+                        // Check if Vacuum Exceeds Maximum Line
+                        if (pro > us2vacline) {
+                            motoroff(); // Turn off motor
+                            pro = static_cast<int>(us2vacline); // Cap vacuum to max line
+                            ui->label_93->setText(QString::number(us2vacline)); // Update UI with capped value
+
+                            // Speaker Feedback
+                            if (speakeronoff == "Speaker ON") {
+                                handler->speaker_on(0, 0, 0, 1); // End tone
+                            } else {
+                                handler->speaker_off();
+                            }
+                        }
+
+                        // Stop Motor When Reached Specific Vacuum
+                        if (pro == us2reachedvac) {
+                            motoroff(); // Turn off motor
+                            motorus2=false;
+                        }
+                    }
                 }
-  }
+                if(SelectedMode == "PHAVenturi"){
+
+                    const int MIN_RANGE = nfpzero+nfpone;
+                                   const int MAX_RANGE = nfpzero+nfpone+nfptwo;
+                                   int divi = MAX_RANGE - MIN_RANGE;
+                                   int calibration = range - MIN_RANGE;
+
+                                   if (divi != 0) {
+                                       double final = static_cast<double>(us2vacline) / static_cast<double>(divi);
+                                       int presetvac = static_cast<int>(std::round(calibration * final));
+                                       int pro = readsensorvalue();
+                                       ui->label_93->setText(QString::number(pro));
+                                       presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                       if (pro < presetvac) {
+                                          handler->convert_dac(0X31,presetvac);
+                                       }
+                                       if (pro >= us2vacline) {
+                                           pro = static_cast<int>(us2vacline);
+                                           ui->label_93->setText(QString::number(pro));
+
+                                       }
+                               }
+                }
 
 
                 handler->phaco_off();
@@ -3440,7 +3684,7 @@ beepsound(3);
                     handler->phaco_power(0);
                  }
                 }
-                if (vus2 == "Surgeon") {
+                if (vus2 == "Surgeon" && SelectedMode == "PHAPeristaltic") {
                     const int MIN_RANGE = nfpzero + nfpone + nfptwo;
                     const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree;
                     int divi = MAX_RANGE - MIN_RANGE; // Divider
@@ -3454,7 +3698,6 @@ beepsound(3);
                         double final = static_cast<double>(us2vacline) / static_cast<double>(divi);
                         int presetvac = static_cast<int>(std::round(calibration * final));
                         int pro = readsensorvalue();
-                        ui->label_93->setText(QString::number(pro));
                         if(speakeronoff== "Speaker ON"){
                         handler->speaker_on(pro, 1, 0, 0);
 }else{
@@ -3462,6 +3705,7 @@ beepsound(3);
                         }
                         // Motor control based on vacuum level
                         if (pro <= presetvac) {
+                            ui->label_93->setText(QString::number(pro));
 
                                 motoron(ui->lineEdit_59);
 
@@ -3485,14 +3729,39 @@ beepsound(3);
                            }
 
 //                            // Keep motor running continuously
-//                            if (!motorus2) {
-//                                motoron(ui->lineEdit_59);
-//                                motorus2 = true;
-//                            }
+                            if (!motorus2) {
+                                motoron(ui->lineEdit_59);
+                                motorus2 = true;
+                            }
                             us2reachedvac=pro;
 
                         }
                     }
+                }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone+nfptwo;
+                                  const int MAX_RANGE =nfpzero+nfpone+nfptwo+nfpthree;
+                                  int divi = MAX_RANGE - MIN_RANGE;
+                                  int calibration = range - MIN_RANGE;
+
+                                  if (divi != 0) {
+                                      double final = static_cast<double>(us2vacline) / static_cast<double>(divi);
+                                      int presetvac = static_cast<int>(std::round(calibration * final));
+                                      int pro = readsensorvalue();
+                                      ui->label_93->setText(QString::number(pro));
+                                      presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                      if (pro < presetvac) {
+                                       handler->convert_dac(0X31,presetvac);
+                                      }
+
+                                      if (pro >= us2vacline) {
+                                          pro = static_cast<int>(us2vacline);
+                                          ui->label_93->setText(QString::number(pro));
+
+                                      }
+                              }
+
                 }
 
 
@@ -3546,6 +3815,9 @@ beepsound(3);
                        int pro=readsensorvalue();
                        ui->label_99->setText(QString::number(pro));
                    motoroff();
+                   if(SelectedMode == "PHAVenturi"){
+                       handler->convert_dac(0X31,0);
+                   }
 
                 ui->label_98->setText("0");
 
@@ -3575,6 +3847,10 @@ beepsound(3);
                   }else{
                       handler->speaker_off();
                   }
+                  if(SelectedMode == "PHAVenturi"){
+                      handler->convert_dac(0X31,0);
+                  }
+
                   handler->freq_count(0);
                   handler->phaco_off();
                 //  handler->fs_count(0);
@@ -3592,7 +3868,7 @@ flag1 = true;
                 ui->CI5_5->setStyleSheet(styleSheet3);
                 handler->pinchvalve_on();
 
- if(vus3=="Panel" ){
+ if(vus3=="Panel" &&SelectedMode == "PHAPeristaltic" ){
      int nonlinear_prevac=readsensorvalue();
      if(nonlinear_prevac <=  us3vacline){
        ui->label_99->setText(QString::number(nonlinear_prevac));
@@ -3616,6 +3892,15 @@ flag1 = true;
    if(us3reachedvac == us3vacline){
        motoroff();
    }
+ }
+ else if(vus3=="Panel" && SelectedMode =="PHAVenturi"){
+     int nsensor=readsensorvalue();
+                         int sensorcontrol=std::min(nsensor,us3vacline);
+
+                        handler->convert_dac(0X31,us3vacline);
+
+                  ui->label_99->setText(QString::number(sensorcontrol));
+
  }
  ui->label_98->setText("0");
                     handler->freq_count(0);
@@ -3673,7 +3958,7 @@ if(vus3=="Panel"){
                                   }
 
 }
-if(us3 == "Panel"){
+if(us3 == "Panel" && SelectedMode == "PHAPeristaltic"){
                if(!us3poweron && text == "ON" ){
                      //  handler->fs_count(range);
                        handler->freq_count(nFreqCount);
@@ -3715,6 +4000,15 @@ if(us3 == "Panel"){
                        updateTimes(pow3,ui->elapsed_time,ui->elapsed_time_2);
 }
 }
+else if(vus3=="Panel" && SelectedMode =="PHAVenturi"){
+    int nsensor=readsensorvalue();
+                        int sensorcontrol=std::min(nsensor,us3vacline);
+
+                       handler->convert_dac(0X31,us3vacline);
+
+                 ui->label_99->setText(QString::number(sensorcontrol));
+
+}
 beepsound(3);
 
 
@@ -3722,6 +4016,8 @@ beepsound(3);
 
   }
         if ((us3 == "Surgeon")||( vus3 == "Surgeon")) {
+            int nsensor=readsensorvalue();
+            int actual_vacuum;
             if (range > 0 && range < nfpzero) {
                 ui->pushButton_42->setText("0");
                 ui->dial_2->setValue(range);
@@ -3736,6 +4032,9 @@ beepsound(3);
               ventonus3=true;
                 }
                 motoroff();
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
 
                  handler->phaco_off();
                  handler->phaco_power(0);
@@ -3762,6 +4061,9 @@ beepsound(3);
               QThread::msleep(100);
              handler->safetyvent_off();
               ventonus3=true;
+                }
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
                 }
 
                 ui->CI5_5->setStyleSheet(styleSheet3);
@@ -3794,41 +4096,76 @@ beepsound(3);
                 handler->pinchvalve_on();
                // handler->safetyvent_off();
                 ui->CI5_5->setStyleSheet(styleSheet3);
- if(vus3=="Surgeon"){
-                const int MIN_RANGE = nfpzero + nfpone;
-                const int MAX_RANGE =nfpzero + nfpone + nfptwo;
-                int divi =  MAX_RANGE-MIN_RANGE ; // Divider
-                int calibration = range - MIN_RANGE; // Calibration value
+                if (vus3 == "Surgeon" && SelectedMode == "PHAPeristaltic") {
+                    const int MIN_RANGE = nfpzero + nfpone; // Example: 2048
+                    const int MAX_RANGE = nfpzero + nfpone + nfptwo; // Example: 3072
+                    int divi = MAX_RANGE - MIN_RANGE; // Example: 1024
+                    int calibration = range - MIN_RANGE; // Example: 3000 - 2048 = 952
 
-                if (divi != 0) {
-                    double final = static_cast<double>( us3vacline) / static_cast<double>(divi);
-                    int presetvac = static_cast<int>(std::round(calibration * final));
-                    int pro = readsensorvalue();
+                    if (divi != 0) {
+                        double final = static_cast<double>(us3vacline) / static_cast<double>(divi); // Example: 350 / 1024
+                        int presetvac = static_cast<int>(std::round(calibration * final)); // Example: 952 * 0.34 = 323
 
-                     ui->label_99->setText(QString::number(pro));
-                     if(speakeronoff == "Speaker ON"){
-                     handler->speaker_on(pro, 1, 0, 0);
- }else{
-                         handler->speaker_off();
-                     }
-                     if (pro <= presetvac) {
-                         motoron(ui->lineEdit_62);
+                        int pro = readsensorvalue(); // Get sensor value
+
+
+                        // Speaker Logic
+                        if (speakeronoff == "Speaker ON") {
+                            handler->speaker_on(pro, 1, 0, 0); // Adjust speaker as per sensor value
+                        } else {
+                            handler->speaker_off();
+                        }
+                        ui->label_99->setText(QString::number(pro)); // Update vacuum value in UI
+
+                        // Motor Control Based on Sensor Value
+                        if (pro <= presetvac) {
+                            motoron(ui->lineEdit_62); // Turn on motor
+                            motorus3=true;
+
+                        } else {
+                            motoroff(); // Turn off motor
+                            motorus3=false;
 
                         }
-                     if(pro> us3vacline){
-                         motoroff();
-                          pro=static_cast<int>( us3vacline);
-                           //speedofthelabe(ui->label_8);
-                           ui->label_99->setText(QString::number(pro));
 
+                        // Check if Vacuum Exceeds Maximum Line
+                        if (pro > us3vacline) {
+                            motoroff(); // Turn off motor
+                            pro = static_cast<int>(us3vacline); // Cap vacuum to max line
+                            ui->label_99->setText(QString::number(us3vacline)); // Update UI with capped value
+                        }
 
-
-              }
-                     if(us3reachedvac ==us3vacline){
-                         motoroff();
-                     }
+                        // Stop Motor When Reached Specific Vacuum
+                        if (us3reachedvac == pro) {
+                            motoroff(); // Turn off motor
+                            motorus3=false;
+                        }
+                    }
                 }
-  }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone;
+                                 const int MAX_RANGE = nfpzero+nfpone+nfptwo;
+                                 int divi = MAX_RANGE - MIN_RANGE;
+                                 int calibration = range - MIN_RANGE;
+
+                                 if (divi != 0) {
+                                     double final = static_cast<double>(us3vacline) / static_cast<double>(divi);
+                                     int presetvac = static_cast<int>(std::round(calibration * final));
+                                     int pro = readsensorvalue();
+                                     ui->label_99->setText(QString::number(pro));
+                                     presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                     if (pro < presetvac) {
+                                        handler->convert_dac(0X31,presetvac);
+                                     }
+                                     if (pro >= us3vacline) {
+                                         pro = static_cast<int>(us3vacline);
+                                         ui->label_99->setText(QString::number(pro));
+
+                                     }
+                             }
+                }
+
 
 
                 handler->phaco_off();
@@ -3897,64 +4234,96 @@ beepsound(3);
                     handler->phaco_power(0);
                  }
                 }
-      if (vus3 == "Surgeon") {
-                    const int MIN_RANGE = nfpzero + nfpone + nfptwo;
-                    const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree;
+                if (vus3 == "Surgeon" && SelectedMode == "PHAPeristaltic") {
+                    const int MIN_RANGE = nfpzero + nfpone + nfptwo; // Example: 3072
+                    const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree; // Example: 4096
                     int divi = MAX_RANGE - MIN_RANGE; // Divider
                     int calibration = range - MIN_RANGE; // Calibration value
-                    if(us3powmode == "Ocuburst"){
+
+                    // Handle power mode configuration
+                    if (us3powmode == "Ocuburst") {
                         handler->pdm_mode(CONTINOUS);
-                    }else if(us3powmode == "Ocupulse" ){
+                    } else if (us3powmode == "Ocupulse") {
                         handler->pdm_mode(CONTINOUS);
                     }
-                    int pro = readsensorvalue();
-                    ui->label_99->setText(QString::number(pro));
 
-                    if(speakeronoff == "Speaker ON"){
-                    handler->speaker_on(pro, 1, 0, 0);
-}else{
+                    int pro = readsensorvalue(); // Get sensor value
+
+                    // Speaker control
+                    if (speakeronoff == "Speaker ON") {
+                        handler->speaker_on(pro, 1, 0, 0);
+                    } else {
                         handler->speaker_off();
                     }
+
                     if (divi != 0) {
                         double final = static_cast<double>(us3vacline) / static_cast<double>(divi);
                         int presetvac = static_cast<int>(std::round(calibration * final));
 
                         // Motor control based on vacuum level
                         if (pro <= presetvac) {
-
-
-                                motoron(ui->lineEdit_62);
-
-                        } else if (pro > us3vacline) {
-                            motoroff();
-                            pro = static_cast<int>(us3vacline);
                             ui->label_99->setText(QString::number(us3vacline));
-                            if(us3powmode == "Ocuburst"){
+                            motoron(ui->lineEdit_62); // Turn on motor
+                        } else if (pro > us3vacline) {
+                            motoroff(); // Turn off motor if vacuum exceeds limit
+                            pro = static_cast<int>(us3vacline); // Cap vacuum to maximum line
+                            ui->label_99->setText(QString::number(us3vacline));
+
+                            // Mode-specific behavior
+                            if (us3powmode == "Ocuburst") {
                                 handler->pdm_mode(SINGLE_BURST);
                                 handler->phaco_on(range);
                                 handler->phaco_power(100);
-                            }else if(us3powmode == "Ocupulse" ){
+                            } else if (us3powmode == "Ocupulse") {
                                 handler->pdm_mode(PULSE_MODE);
-                              nOcuPulseCount = ui->lineEdit_77->text().toInt();
+                                nOcuPulseCount = ui->lineEdit_77->text().toInt(); // Get pulse count
                                 handler->pulse_count(nOcuPulseCount);
                             }
-                          if(speakeronoff == "Speaker ON"){
 
-                            handler->speaker_on(0, 0, 0, 1);
-}                      else{
-                              handler->speaker_off();
-                          }
+                            // Speaker feedback
+                            if (speakeronoff == "Speaker ON") {
+                                handler->speaker_on(0, 0, 0, 1); // End tone
+                            } else {
+                                handler->speaker_off();
+                            }
 
-                            // Keep motor running continuously
+                            // Continuous motor operation
                             if (!motorus3) {
-                                motoron(ui->lineEdit_62);
+                                motoron(ui->lineEdit_62); // Keep motor running
                                 motorus3 = true;
                             }
-                            us3reachedvac=pro;
+
+                            us3reachedvac =pro; // Update reached vacuum value
                         }
                     }
                 }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone+nfptwo;
+                                  const int MAX_RANGE =nfpzero+nfpone+nfptwo+nfpthree;
+                                  int divi = MAX_RANGE - MIN_RANGE;
+                                  int calibration = range - MIN_RANGE;
 
+                                  if (divi != 0) {
+                                      double final = static_cast<double>(us3vacline) / static_cast<double>(divi);
+                                      int presetvac = static_cast<int>(std::round(calibration * final));
+                                      int pro = readsensorvalue();
+                                      ui->label_99->setText(QString::number(pro));
+                                      presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                      if (pro <= presetvac) {
+                                       handler->convert_dac(0X31,presetvac);
+                                      }
+
+                                      if (pro > us3vacline) {
+                                          pro = static_cast<int>(us3vacline);
+                                          ui->label_99->setText(QString::number(pro));
+
+                                      }
+                              }
+
+
+
+                }
 
                beepsound(3);
 
@@ -4006,6 +4375,9 @@ beepsound(3);
                      handler->safetyvent_off();
                      ventonus4=true;
                        }
+                       if(SelectedMode == "PHAVenturi"){
+                           handler->convert_dac(0X31,0);
+                       }
                        int pro=readsensorvalue();
                        ui->label_104->setText(QString::number(pro));
                    motoroff();
@@ -4025,7 +4397,9 @@ beepsound(3);
                    handler->safetyvent_off();
                    ventonus4=true;
                      }
-
+                     if(SelectedMode == "PHAVenturi"){
+                         handler->convert_dac(0X31,0);
+                     }
                   int pro=readsensorvalue();
                   ui->label_104->setText(QString::number(pro));
                   ui->CI5_5->setStyleSheet(styleSheet3);
@@ -4053,7 +4427,7 @@ flag1 = true;
                 ui->CI5_5->setStyleSheet(styleSheet3);
                 handler->pinchvalve_on();
 
- if(vus4=="Panel" ){
+ if(vus4=="Panel" && SelectedMode == "PHAPeristaltic" ){
      int nonlinear_prevac=readsensorvalue();
      if(nonlinear_prevac <=  us4vacline){
        ui->label_104->setText(QString::number(nonlinear_prevac));
@@ -4077,6 +4451,15 @@ flag1 = true;
        motoroff();
    }
  }
+ else if(vus4=="Panel" && SelectedMode =="PHAVenturi"){
+     int nsensor=readsensorvalue();
+                            int sensorcontrol=std::min(nsensor,us4vacline);
+
+                           handler->convert_dac(0X31,us4vacline);
+
+                     ui->label_104->setText(QString::number(sensorcontrol));
+
+ }
  ui->label_105->setText("0");
                     handler->freq_count(0);
                     handler->phaco_off();
@@ -4095,7 +4478,7 @@ flag1 = true;
                 ventonus4=false;
                 handler->pinchvalve_on();
                 ui->CI5_5->setStyleSheet(styleSheet3);
-if(vus4=="Panel"){
+if(vus4=="Panel" && SelectedMode == "PHAPeristaltic"){
      int nonlinear_prevac=readsensorvalue();
      if(nonlinear_prevac<=us4vacline){
                               ui->label_104->setText(QString::number(nonlinear_prevac));
@@ -4130,7 +4513,17 @@ if(vus4=="Panel"){
                                           handler->pulse_count(nOcuPulseCount);
                                       }
                                   }
+                                  us4reachedvac=us4vacline;
                               }
+else if(vus4=="Panel" && SelectedMode =="PHAVenturi"){
+    int nsensor=readsensorvalue();
+                           int sensorcontrol=std::min(nsensor,us4vacline);
+
+                          handler->convert_dac(0X31,us4vacline);
+
+                    ui->label_118->setText(QString::number(sensorcontrol));
+
+}
 if(us4 == "Panel"){
                if(!us4poweron && text == "ON" ){
                      //  handler->fs_count(range);
@@ -4175,6 +4568,8 @@ if(us4 == "Panel"){
 
   }
         if ((us4== "Surgeon")||( vus4 == "Surgeon")) {
+            int nsensor=readsensorvalue();
+            int actual_vacuum;
             if (range > 0 && range < nfpzero) {
                 ui->pushButton_42->setText("0");
                 ui->dial_2->setValue(range);
@@ -4200,7 +4595,9 @@ if(us4 == "Panel"){
                      ui->label_105->setText("0");
                 handler->speaker_off();
                 beepsound(0);
-
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
                 us4poweron=false;
                 flag1 = true; // Reset flag
 
@@ -4232,7 +4629,9 @@ if(us4 == "Panel"){
                 }else{
                     handler->speaker_off();
                 }                us4poweron=false;
-
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
                 beepsound(1);
 
                 flag1 = true; // Reset flag
@@ -4247,7 +4646,7 @@ if(us4 == "Panel"){
                 handler->pinchvalve_on();
                // handler->safetyvent_off();
                 ui->CI5_5->setStyleSheet(styleSheet3);
-        if(vus4=="Surgeon"){
+        if(vus4=="Surgeon" && SelectedMode == "PHAPeristaltic"){
                 const int MIN_RANGE = nfpzero + nfpone;
                 const int MAX_RANGE =nfpzero + nfpone + nfptwo;
                 int divi =  MAX_RANGE-MIN_RANGE ; // Divider
@@ -4257,23 +4656,25 @@ if(us4 == "Panel"){
                     double final = static_cast<double>( us4vacline) / static_cast<double>(divi);
                     int presetvac = static_cast<int>(std::round(calibration * final));
                     int pro = readsensorvalue();
-                     ui->label_104->setText(QString::number(pro));
 
                      if (pro <= presetvac) {
                          motoron(ui->lineEdit_65);
-//                         if(speakeronoff == "Speaker ON"){
-//                         handler->speaker_on(pro,1,0,0);
-//                         }else{
-//                             handler->speaker_off();
-//                         }
+                         ui->label_104->setText(QString::number(pro));
+
+                         if(speakeronoff == "Speaker ON"){
+                         handler->speaker_on(pro,1,0,0);
+                         }else{
+                             handler->speaker_off();
+                         }
 //                        if (!motorus4) {
 //                            motoron(ui->lineEdit_65);
-//                            motorus4 = true;
+                            motorus4 = true;
 //                        }
-//                    } else if (motorus4) {
-//                        motoroff();
-//                        motorus4 = false;
-                    }
+                    } else  {
+                        motoroff();
+                        motorus4 = false;
+                     }
+
                      if(pro> us4vacline){
                           pro=static_cast<int>( us4vacline);
                           motoroff();
@@ -4287,11 +4688,35 @@ if(us4 == "Panel"){
 
 
               }
-                     if(us4reachedvac == us4vacline){
+                     if(us4reachedvac == pro){
                          motoroff();
+                         motorus4=false;
                      }
                 }
   }
+        if(SelectedMode == "PHAVenturi"){
+            const int MIN_RANGE = nfpzero+nfpone;
+                            const int MAX_RANGE = nfpzero+nfpone+nfptwo;
+                            int divi = MAX_RANGE - MIN_RANGE;
+                            int calibration = range - MIN_RANGE;
+
+                            if (divi != 0) {
+                                double final = static_cast<double>(us4vacline) / static_cast<double>(divi);
+                                int presetvac = static_cast<int>(std::round(calibration * final));
+                                int pro = readsensorvalue();
+                                ui->label_104->setText(QString::number(pro));
+                                presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                if (pro < presetvac) {
+                                   handler->convert_dac(0X31,presetvac);
+                                }
+                                if (pro >= us4vacline) {
+                                    pro = static_cast<int>(us4vacline);
+                                    ui->label_118->setText(QString::number(pro));
+
+                                }
+                        }
+        }
 
 
                 handler->phaco_off();
@@ -4310,7 +4735,7 @@ if(us4 == "Panel"){
                 handler->pinchvalve_on();
                 ui->CI5_5->setStyleSheet(styleSheet3);
 
-                if (vus4 == "Surgeon") {
+                if (vus4 == "Surgeon" && SelectedMode == "PHAPeristaltic") {
                     const int MIN_RANGE = nfpzero + nfpone + nfptwo;
                     const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree;
                     int divi = MAX_RANGE - MIN_RANGE; // Divider
@@ -4324,7 +4749,6 @@ if(us4 == "Panel"){
                         double final = static_cast<double>(us4vacline) / static_cast<double>(divi);
                         int presetvac = static_cast<int>(std::round(calibration * final));
                         int pro = readsensorvalue();
-                        ui->label_104->setText(QString::number(pro));
                         if(speakeronoff == "Speaker ON"){
                         handler->speaker_on(pro, 1, 0, 0);
 }else{
@@ -4337,6 +4761,7 @@ if(us4 == "Panel"){
                             handler->pdm_mode(CONTINOUS);
                         }
                         if (pro <= presetvac) {
+                            ui->label_104->setText(QString::number(pro));
 
                                 motoron(ui->lineEdit_65);
 
@@ -4365,9 +4790,34 @@ if(us4 == "Panel"){
                                 motoron(ui->lineEdit_65);
                                 motorus4 = true;
                             }
-                            us4reachedvac=us4vacline;
+                            us4reachedvac=pro;
                         }
                     }
+                }
+                if(SelectedMode == "PHAVenturi"){
+                    const int MIN_RANGE = nfpzero+nfpone+nfptwo;
+                                   const int MAX_RANGE =nfpzero+nfpone+nfptwo+nfpthree;
+                                   int divi = MAX_RANGE - MIN_RANGE;
+                                   int calibration = range - MIN_RANGE;
+
+                                   if (divi != 0) {
+                                       double final = static_cast<double>(us4vacline) / static_cast<double>(divi);
+                                       int presetvac = static_cast<int>(std::round(calibration * final));
+                                       int pro = readsensorvalue();
+                                       ui->label_104->setText(QString::number(pro));
+                                       presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                                       if (pro < presetvac) {
+                                        handler->convert_dac(0X31,presetvac);
+                                       }
+
+                                       if (pro >= us4vacline) {
+                                           pro = static_cast<int>(us4vacline);
+                                           ui->label_104->setText(QString::number(pro));
+
+                                       }
+                               }
+
                 }
 
                if(us4 == "Surgeon"){
@@ -4456,7 +4906,12 @@ QString ia1=ui->ia2mode->text();
                 }
                handler->speaker_off();
                 motoroff();
-                ui->label_113->setText(QString::number(0));
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
+
+                int pro = readsensorvalue();
+                ui->label_113->setText(QString::number(pro));
                 flag6=true;
             }
 
@@ -4481,6 +4936,10 @@ QString ia1=ui->ia2mode->text();
                 motoroff();
                 int pro = readsensorvalue();
                 ui->label_113->setText(QString::number(pro));
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
+
                 beepsound(1);
                  flag6=true;
             }
@@ -4493,6 +4952,7 @@ QString ia1=ui->ia2mode->text();
                 ui->dial_2->setValue(range);
                 ui->CI5_5->setStyleSheet(styleSheet3);
                 handler->pinchvalve_on();
+                 if(SelectedMode == "PHAPeristaltic"){
                int nonlinear_prevac = readsensorvalue(); // Assuming this function reads the current sensor value
                int nonlinear_vac = std::min(nonlinear_prevac, static_cast<int>(ia1preset));
                ui->label_113->setText(QString::number(nonlinear_vac));
@@ -4502,6 +4962,7 @@ QString ia1=ui->ia2mode->text();
                }else{
                    handler->speaker_off();
                }
+
                if (nonlinear_prevac >= ia1preset) {
                          motoroff(); // Turn off the motor
                        //  speedofthelabe(ui->label_113);
@@ -4512,11 +4973,32 @@ QString ia1=ui->ia2mode->text();
                          }
 
                     }
+               }else if(SelectedMode == "PHAVenturi"){
+                     int nsensor=readsensorvalue();
+                     if(nsensor<=ia1preset){
+                     handler->convert_dac(0X31,ia1preset);
+               ui->label_113->setText(QString::number(nsensor));
+               if(speakeronoff == "Speaker ON"){
+               handler->speaker_on(nsensor,1,0,0);
+               }else{
+                   handler->speaker_off();
+               }
+
+                    }else if(nsensor >=ia1preset){
+                         ui->label_113->setText(QString::number(ia1preset));
+                         if(speakeronoff == "Speaker ON"){
+                         handler->speaker_on(0,0,0,1);
+                         }else{
+                             handler->speaker_off();
+                         }
+                     }
+               }
                beepsound(2);
            }
         }
 
         else if(ia1 == "Surgeon"){
+            int nsensor = readsensorvalue();
             if(range>=0 && range<nfpzero){
                 ui->pushButton_42->setText("0");
                   ui->dial_2->setValue(range);
@@ -4536,6 +5018,10 @@ QString ia1=ui->ia2mode->text();
                     //int pro = readsensorvalue();
                  ui->label_113->setText(QString::number(0));
                  handler->speaker_off();
+                 if(SelectedMode == "PHAVenturi"){
+                     handler->convert_dac(0X31,0);
+                 }
+
                   flag6=true;
 
 
@@ -4563,6 +5049,10 @@ QString ia1=ui->ia2mode->text();
                    handler->safetyvent_off();
                    ventonia1 = true;
                }
+               if(SelectedMode == "PHAVenturi"){
+                   handler->convert_dac(0X31,0);
+               }
+
                beepsound(1);
              flag6=true;
 }
@@ -4575,6 +5065,7 @@ QString ia1=ui->ia2mode->text();
                 ui->CI5_5->setStyleSheet(styleSheet3);
 handler->safetyvent_off();
 handler->pinchvalve_on();
+if(SelectedMode == "PHAPeristaltic"){
                 const int MIN_RANGE = nfpzero + nfpone;
                 const int MAX_RANGE =nfpzero + nfpone + nfptwo + nfpthree;
                 int divi =  MAX_RANGE-MIN_RANGE ; // Divider
@@ -4616,7 +5107,37 @@ handler->pinchvalve_on();
                     }
 
             }
-               // ia1currentcount=2;
+}
+else if (SelectedMode == "PHAVenturi" && ia1=="Surgeon"){
+   // qDebug()<<"ia1 is"<<ia1;
+    // Calculate the range for the third phase
+    int third_start = nfpzero + nfpone + nfptwo;
+    int third_end = nfpzero + nfpone + nfptwo + nfpthree;
+    double diff_count = static_cast<double>(third_end - third_start); // Range of the third phase
+    double fs_count = static_cast<double>(range - third_start);       // Difference from third_start to range
+
+    // Calculate vacuum in mmHg
+    double vac_mmhg_per_step = ia1preset / diff_count;
+    double actual_vacuum = static_cast<int>(std::round(fs_count * vac_mmhg_per_step));
+    actual_vacuum = std::max(1.0, actual_vacuum);
+
+    // Ensure actual_vacuum starts at 1 and increments upwards
+
+    qDebug() << "The actual vacuum is" << actual_vacuum;
+
+
+    // Ensure the vacuum stops when nsensor reaches or exceeds the preset value
+    if (nsensor <= actual_vacuum) {
+        handler->convert_dac(0x31, actual_vacuum); // Send clamped vacuum to DAC
+        // Update the UI label to display the sensor reading
+        ui->label_113->setText(QString::number(nsensor));
+    } else if (nsensor >= actual_vacuum) {
+        // Stop DAC adjustments and display the clamped sensor value
+        ui->label_113->setText(QString::number(actual_vacuum));
+    }
+
+}
+              // ia1currentcount=2;
 
 }
         }
@@ -4646,8 +5167,12 @@ handler->pinchvalve_on();
                     handler->safetyvent_off();
                    ventonia2=true;
                 }
-             //   int ia2pro=readsensorvalue();
-                ui->label_109->setText(QString::number(0));
+               int ia2pro=readsensorvalue();
+                ui->label_109->setText(QString::number(ia2pro));
+                if(SelectedMode == "PHAVenturi"){
+                    handler->convert_dac(0X31,0);
+                }
+
  motoroff();
   handler->speaker_off();
   beepsound(0);
@@ -4671,6 +5196,10 @@ handler->pinchvalve_on();
                 handler->safetyvent_off();
                 ventonia2=true;
             }
+            if(SelectedMode == "PHAVenturi"){
+                handler->convert_dac(0X31,0);
+            }
+
             beepsound(1);
 }
             else if(range>=(nfpzero+nfpone) && range <(nfpzero+nfpone+nfptwo+nfpthree)){
@@ -4681,6 +5210,7 @@ handler->pinchvalve_on();
                 ui->CI5_5->setStyleSheet(styleSheet3);
                 handler->safetyvent_off();
                 handler->pinchvalve_on();
+                if(SelectedMode == "PHAPeristaltic"){
             int nonlinear_prevac = readsensorvalue(); // Assuming this function reads the current sensor value
                               int nonlinear_vac = std::min(nonlinear_prevac, static_cast<int>(ia2vacline));
                               ui->label_109->setText(QString::number(nonlinear_vac));
@@ -4698,6 +5228,27 @@ handler->pinchvalve_on();
                                       handler->speaker_off();
                                   }
                               }
+                }
+                else if(SelectedMode == "PHAVenturi"){
+                                     int nsensor=readsensorvalue();
+                                     if(nsensor<=ia2vacline){
+                                     handler->convert_dac(0X31,ia2vacline);
+                               ui->label_109->setText(QString::number(nsensor));
+                               if(speakeronoff == "Speaker ON"){
+                               handler->speaker_on(nsensor,1,0,0);
+                               }else{
+                                   handler->speaker_off();
+                               }
+
+                                    }else if(nsensor >=ia2vacline){
+                                         ui->label_109->setText(QString::number(ia2vacline));
+                                         if(speakeronoff == "Speaker ON"){
+                                         handler->speaker_on(0,0,0,1);
+                                         }else{
+                                             handler->speaker_off();
+                                         }
+                                     }
+                               }
                               beepsound(2);
 
             }
@@ -4721,6 +5272,10 @@ handler->pinchvalve_on();
                       }
                       //int ia2pro=readsensorvalue();
                       ui->label_109->setText(QString::number(0));
+                      if(SelectedMode == "PHAVenturi"){
+                          handler->convert_dac(0X31,0);
+                      }
+
                       beepsound(0);
                 }
                 if(range>=nfpzero && range<(nfpone+nfpzero)){
@@ -4743,6 +5298,10 @@ handler->pinchvalve_on();
                       }
                       int ia2pro=readsensorvalue();
                       ui->label_109->setText(QString::number(ia2pro));
+                      if(SelectedMode == "PHAVenturi"){
+                          handler->convert_dac(0X31,0);
+                      }
+
                       beepsound(1);
                 }
                 else if(range>=(nfpzero+nfpone) && range <(nfpone+nfpzero+nfptwo+nfpthree)){
@@ -4753,6 +5312,7 @@ handler->pinchvalve_on();
                   ui->CI5_5->setStyleSheet(styleSheet3);
                     handler->safetyvent_off();
                     handler->pinchvalve_on();
+                    if(SelectedMode == "PHAPeristaltic"){
                     const int MIN_RANGE = nfpzero + nfpone;
                     const int MAX_RANGE =nfpzero + nfpone + nfptwo + nfpthree;
                     int divi =  MAX_RANGE-MIN_RANGE ; // Divider
@@ -4793,6 +5353,37 @@ handler->pinchvalve_on();
                         }
 
                 }
+                    }
+                    else if (SelectedMode == "PHAVenturi" && ia1=="Surgeon"){
+                       // qDebug()<<"ia1 is"<<ia1;
+                        // Calculate the range for the third phase
+                        int third_start = nfpzero + nfpone + nfptwo;
+                        int third_end = nfpzero + nfpone + nfptwo + nfpthree;
+                        double diff_count = static_cast<double>(third_end - third_start); // Range of the third phase
+                        double fs_count = static_cast<double>(range - third_start);       // Difference from third_start to range
+
+                        // Calculate vacuum in mmHg
+                        double vac_mmhg_per_step = ia2vacline / diff_count;
+                        double actual_vacuum = static_cast<int>(std::round(fs_count * vac_mmhg_per_step));
+                        actual_vacuum = std::max(1.0, actual_vacuum);
+
+                        // Ensure actual_vacuum starts at 1 and increments upwards
+
+                        qDebug() << "The actual vacuum is" << actual_vacuum;
+
+                        int nsensor = readsensorvalue();
+
+                        // Ensure the vacuum stops when nsensor reaches or exceeds the preset value
+                        if (nsensor <= actual_vacuum) {
+                            handler->convert_dac(0x31, actual_vacuum); // Send clamped vacuum to DAC
+                            // Update the UI label to display the sensor reading
+                            ui->label_109->setText(QString::number(nsensor));
+                        } else if (nsensor >= actual_vacuum) {
+                            // Stop DAC adjustments and display the clamped sensor value
+                            ui->label_109->setText(QString::number(actual_vacuum));
+                        }
+
+                    }
                         beepsound(2);
                       }
 
@@ -4807,9 +5398,11 @@ handler->pinchvalve_on();
     case 7: {
         int pow7 = ui->lineEdit_71->text().toInt();
        QString vvac = ui->vitvacmode->text();  // "Surgeon" or "Panel"
-        double vitpreset = ui->lineEdit_73->text().toDouble();  // vitpreset should be double for better precision
+       int vitpreset = ui->lineEdit_73->text().toDouble();  // vitpreset should be double for better precision
    handler->phaco_off();
    handler->phaco_power(0);
+
+
         if (range > 0 && range < nfpzero) {
             // State 0
             ui->pushButton_42->setText("0");
@@ -4829,7 +5422,11 @@ handler->pinchvalve_on();
             motoroff();
             ui->label_119->setText("0");
             int vitpro = readsensorvalue();
-            ui->label_118->setText(QString::number(0));
+            ui->label_118->setText(QString::number(vitpro));
+            if(SelectedMode == "PHAVenturi"){
+                handler->convert_dac(0X31,0);
+            }
+
  handler->speaker_off();
  beepsound(0);
             handler->vit_off();
@@ -4853,6 +5450,10 @@ handler->pinchvalve_on();
 
             handler->pinchvalve_on();
             motoroff();
+            if(SelectedMode == "PHAVenturi"){
+                handler->convert_dac(0X31,0);
+            }
+
             int vitpro = readsensorvalue();
             ui->label_118->setText(QString::number(vitpro));
             ui->label_119->setText("0");
@@ -4869,7 +5470,7 @@ handler->pinchvalve_on();
             handler->safetyvent_off();
             handler->pinchvalve_on();
 
-            if (vvac == "Surgeon") {
+            if (vvac == "Surgeon"  && SelectedMode == "PHAPeristaltic") {
                 const int MIN_RANGE = nfpzero + nfpone;
                 const int MAX_RANGE = nfpzero + nfpone + nfptwo;
                 int divi = MAX_RANGE - MIN_RANGE;  // Divider
@@ -4911,7 +5512,7 @@ handler->pinchvalve_on();
                     }
                 }
 
-            } else if (vvac == "Panel") {
+            } else if (vvac == "Panel" && SelectedMode == "PHAPeristaltic") {
                 int nonlinear_prevac = readsensorvalue();  // Current sensor value
                 int nonlinear_vac = std::min(nonlinear_prevac, static_cast<int>(vitpreset));
                 ui->label_118->setText(QString::number(nonlinear_vac));
@@ -4932,6 +5533,41 @@ handler->pinchvalve_on();
 
                 }
             }
+            if (vvac == "Surgeon" && SelectedMode == "PHAVenturi") {
+                const int MIN_RANGE = nfpzero+nfpone;
+                const int MAX_RANGE = nfpzero+nfpone+nfptwo;
+                int divi = MAX_RANGE - MIN_RANGE;
+                int calibration = range - MIN_RANGE;
+
+                if (divi != 0) {
+                    double final = static_cast<double>(vitpreset) / static_cast<double>(divi);
+                    int presetvac = static_cast<int>(std::round(calibration * final));
+                    int pro = readsensorvalue();
+                    ui->label_118->setText(QString::number(pro));
+
+                    if (pro < presetvac) {
+                       handler->convert_dac(0X31,presetvac);
+                    }
+                    if (pro >= vitpreset) {
+                        pro = static_cast<int>(vitpreset);
+                        ui->label_118->setText(QString::number(pro));
+
+                    }
+            }
+               }
+
+
+                        else if(vvac == "Panel" && SelectedMode == "PHAVenturi"){
+                int nsensor=readsensorvalue();
+                 int sensorcontrol=std::min(nsensor,vitpreset);
+
+                handler->convert_dac(0X31,vitpreset);
+
+          ui->label_118->setText(QString::number(sensorcontrol));
+
+                                    }
+
+
 
             ui->label_119->setText("0");
             handler->vit_off();
@@ -4954,7 +5590,7 @@ handler->pinchvalve_on();
               //  handler->vit_ontime(30);
             }
 
-            if (vvac == "Surgeon") {
+            if (vvac == "Surgeon" && SelectedMode == "PHAPeristaltic") {
                 const int MIN_RANGE = nfpzero + nfpone + nfptwo;
                 const int MAX_RANGE = nfpzero + nfpone + nfptwo + nfpthree;
                 int divi = MAX_RANGE - MIN_RANGE;
@@ -4991,7 +5627,7 @@ handler->pinchvalve_on();
                         motoroff();
                     }
                 }
-            } else if (vvac == "Panel") {
+            } else if (vvac == "Panel" && SelectedMode == "PHAPeristaltic") {
                 int nonlinear_prevac = readsensorvalue();
                 int nonlinear_vac = std::min(nonlinear_prevac, static_cast<int>(vitpreset));
                 ui->label_118->setText(QString::number(nonlinear_vac));
@@ -5010,8 +5646,48 @@ handler->pinchvalve_on();
                     }
                 }
             }
+            else if (vvac == "Surgeon" && SelectedMode == "PHAVenturi") {
+                const int MIN_RANGE = nfpzero+nfpone+nfptwo;
+                const int MAX_RANGE =nfpzero+nfpone+nfptwo+nfpthree;
+                int divi = MAX_RANGE - MIN_RANGE;
+                int calibration = range - MIN_RANGE;
 
-        }
+                if (divi != 0) {
+                    double final = static_cast<double>(vitpreset) / static_cast<double>(divi);
+                    int presetvac = static_cast<int>(std::round(calibration * final));
+                    int pro = readsensorvalue();
+                    ui->label_118->setText(QString::number(pro));
+                    presetvac += 2; // Or you can use presetvac += 3; depending on your requirement
+
+                    if (pro < presetvac) {
+                     handler->convert_dac(0X31,presetvac);
+                    }
+
+                    if (pro >= vitpreset) {
+                        pro = static_cast<int>(vitpreset);
+                        ui->label_118->setText(QString::number(pro));
+
+                    }
+            }
+
+             }
+
+             ui->label_119->setText("0");
+             handler->vit_off(); // Ensure the vit action is turned off
+         }
+            else if(vvac == "Panel" && SelectedMode == "PHAVenturi"){
+                            int nsensor=readsensorvalue();
+                             int sensorcontrol=std::min(nsensor,vitpreset);
+
+                            handler->convert_dac(0X31,vitpreset);
+
+                      ui->label_118->setText(QString::number(sensorcontrol));
+
+
+                        }
+
+
+
 
         break;
     }
@@ -6969,10 +7645,12 @@ ui->comboBox->setCurrentText(text);
 void MainWindow::performpump(const QString &text)
 {
 ui->comboBox->setCurrentText(text);
-////qDebug()<<"the combo box current text is"<<text;
+qDebug()<<"the combo box current text is<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"<<text;
   QString value=ui->comboBox->currentText();
-    if(value == "Peristaltic"){
+    if(ui->comboBox->currentText() == "PHAPeristaltic"){
 // ui->pushButton->setStyleSheet("background-color:green;");
+        qDebug()<<"the combo box current text inside peristaltic is<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"<<text;
+
         //us1
         ui->label_87->show();
         ui->lineEdit_56->show();
@@ -7027,11 +7705,12 @@ ui->comboBox->setCurrentText(text);
         ui->vitflowdown_but->show();
 
         ui->lblvitflow->show();
-      
+
 
     }
-    else if(value == "Venturi"){
+    if(ui->comboBox->currentText() == "PHAVenturi"){
        // ui->pushButton_2->setStyleSheet("background-color:green;");
+        qDebug()<<value<<"the mode is...././///////////////////.//////////////////";
         //us1
         ui->label_87->hide();
         ui->lineEdit_56->hide();
@@ -7073,7 +7752,7 @@ ui->comboBox->setCurrentText(text);
         ui->ia2flowup_but->hide();
         ui->ia2flowdown_but->hide();
 
-        ui->lblia1flow->hide();
+        ui->lblia2flow->hide();
         //vit
         ui->label_122->hide();
         ui->lineEdit_72->hide();
@@ -7084,7 +7763,6 @@ ui->comboBox->setCurrentText(text);
     }
 
 }
-
 void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo, int dia, int us1pow, int us1vac, int us1asp, int us2pow, int us2vac, int us2asp, int us3pow, int us3vac, int us3asp, int us4pow, int us4vac, int us4asp, int ia1vac, int ia1asp, int ia2vac, int ia2asp, int vitcut, int vitvac, int vitasp, const QString &powmode, const QString &vacmode, const QString &powmethod, const QString &us2powmode, const QString &us2vacmode, const QString &us2powermethod, const QString &us3powmode, const QString &us3vacmode, const QString &us3powermethod, const QString &us4powmode, const QString &us4vacmode, const QString &us4powermethod, const QString &ia1mode, const QString &ia2mode, const QString &vitmode, const QString &vitvacmode)
 {
     surgicalData.comboBoxValue = comboBoxValue;
@@ -7135,28 +7813,7 @@ void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo
       ui->us1mode->setText(surgicalData.powmode);
       ui->us1vacmode->setText(surgicalData.vacmode);
       ui->CutMode_vitCom->setCurrentText(surgicalData.powmethod);
-    //updateTabsBasedOnComboBox(ui->CutMode_vitCom->currentText());
-//      if(surgicalData.powmethod=="Continuous"){
-//          ui->tabWidget_2->setCurrentIndex(0);
-//      }
-//      if(surgicalData.powmethod=="Pulse"){
-//          ui->tabWidget_2->setCurrentIndex(1);
-//      }
-//      if(surgicalData.powmethod=="Ocupulse"){
-//          ui->tabWidget_2->setCurrentIndex(2);
-//      }
-//      if(surgicalData.powmethod=="Ocuburst"){
-//          ui->tabWidget_2->setCurrentIndex(3);
-//      }
-//      if(surgicalData.powmethod=="Single burst"){
-//          ui->tabWidget_2->setCurrentIndex(4);
-//      }
-//      if(surgicalData.powmethod=="Multi burst"){
-//          ui->tabWidget_2->setCurrentIndex(5);
-//      }
-//      if(surgicalData.powmethod=="Cold Phaco"){
-//          ui->tabWidget_2->setCurrentIndex(6);
-//      }
+
 
       //us2
       ui->lineEdit_58->setText(QString::number(surgicalData.us2pow));
@@ -7165,28 +7822,7 @@ void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo
       ui->us2mode->setText(surgicalData.us2powmode);
       ui->us2vacmode->setText(surgicalData.us2vacmode);
       ui->CutMode_vitCom_2->setCurrentText(surgicalData.us2powermethod);
-    //  updateTabsBasedOnComboBox(ui->CutMode_vitCom_2->currentText());
-//      if(surgicalData.us2powermethod=="Continuous"){
-//          ui->tabWidget_2->setCurrentIndex(0);
-//      }
-//      if(surgicalData.us2powermethod=="Pulse"){
-//          ui->tabWidget_2->setCurrentIndex(1);
-//      }
-//      if(surgicalData.us2powermethod=="Ocupulse"){
-//          ui->tabWidget_2->setCurrentIndex(2);
-//      }
-//      if(surgicalData.us2powermethod=="Ocuburst"){
-//          ui->tabWidget_2->setCurrentIndex(3);
-//      }
-//      if(surgicalData.us2powermethod=="Single burst"){
-//          ui->tabWidget_2->setCurrentIndex(4);
-//      }
-//      if(surgicalData.us2powermethod=="Multi burst"){
-//          ui->tabWidget_2->setCurrentIndex(5);
-//      }
-//      if(surgicalData.us2powermethod=="Cold Phaco"){
-//          ui->tabWidget_2->setCurrentIndex(6);
-//      }
+
       //us3
       ui->lineEdit_61->setText(QString::number(surgicalData.us3pow));
       ui->lineEdit_63->setText(QString::number(surgicalData.us3vac));
@@ -7195,27 +7831,7 @@ void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo
       ui->us3vacmode->setText(surgicalData.us3vacmode);
       ui->CutMode_vitCom_3->setCurrentText(surgicalData.us3powermethod);
      // updateTabsBasedOnComboBox(ui->CutMode_vitCom_3->currentText());
-//      if(surgicalData.us3powermethod=="Continuous"){
-//          ui->tabWidget_2->setCurrentIndex(0);
-//      }
-//      if(surgicalData.us3powermethod=="Pulse"){
-//          ui->tabWidget_2->setCurrentIndex(1);
-//      }
-//      if(surgicalData.us3powermethod=="Ocupulse"){
-//          ui->tabWidget_2->setCurrentIndex(2);
-//      }
-//      if(surgicalData.us3powermethod=="Ocuburst"){
-//          ui->tabWidget_2->setCurrentIndex(3);
-//      }
-//      if(surgicalData.us3powermethod=="Single burst"){
-//          ui->tabWidget_2->setCurrentIndex(4);
-//      }
-//      if(surgicalData.us3powermethod=="Multi burst"){
-//          ui->tabWidget_2->setCurrentIndex(5);
-//      }
-//      if(surgicalData.us3powermethod=="Cold Phaco"){
-//          ui->tabWidget_2->setCurrentIndex(6);
-//      }
+
       //us4
       ui->lineEdit_64->setText(QString::number(surgicalData.us4pow));
       ui->lineEdit_66->setText(QString::number(surgicalData.us4vac));
@@ -7223,28 +7839,7 @@ void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo
       ui->us4mode->setText(surgicalData.us4powmode);
       ui->us4vacmode->setText(surgicalData.us4vacmode);
       ui->CutMode_vitCom_4->setCurrentText(surgicalData.us4powermethod);
-    //  updateTabsBasedOnComboBox(ui->CutMode_vitCom_4->currentText());
-//      if(surgicalData.us4powermethod=="Continuous"){
-//          ui->tabWidget_2->setCurrentIndex(0);
-//      }
-//      if(surgicalData.us4powermethod=="Pulse"){
-//          ui->tabWidget_2->setCurrentIndex(1);
-//      }
-//      if(surgicalData.us4powermethod=="Ocupulse"){
-//          ui->tabWidget_2->setCurrentIndex(2);
-//      }
-//      if(surgicalData.us4powermethod=="Ocuburst"){
-//          ui->tabWidget_2->setCurrentIndex(3);
-//      }
-//      if(surgicalData.us4powermethod=="Single burst"){
-//          ui->tabWidget_2->setCurrentIndex(4);
-//      }
-//      if(surgicalData.us4powermethod=="Multi burst"){
-//          ui->tabWidget_2->setCurrentIndex(5);
-//      }
-//      if(surgicalData.us4powermethod=="Cold Phaco"){
-//          ui->tabWidget_2->setCurrentIndex(6);
-//      }
+
       //ia1
       ui->lineEdit_70->setText(QString::number(surgicalData.ia1vac));
       ui->lineEdit_69->setText(QString::number(surgicalData.ia1asp));
@@ -7256,7 +7851,6 @@ void MainWindow::receiveValues(const QString &comboBoxValue,const QString &combo
       ui->vitvacmode->setText(surgicalData.vitvacmode);
       ui->ia2mode->setText(surgicalData.ia1mode);
       ui->ia1mode->setText(surgicalData.ia2mode);
-      //qDebug()<<surgicalData.ia1asp<<surgicalData.ia2asp<<surgicalData.ia1vac<<surgicalData.ia2vac<<"these are sended from the doctor windiow";
 
 
 }
@@ -7376,7 +7970,7 @@ void MainWindow::rx_speakeronoff(const QString &text)
 int MainWindow::readsensorvalue()
 {
     int sensorvalue=vac->convert(0XD7);
-    int actualsensor=sensorvalue*0.17;
+    int actualsensor=sensorvalue*0.14;
     return actualsensor;
     //qDebug()<<actualsensor;
 

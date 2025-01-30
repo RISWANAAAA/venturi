@@ -668,9 +668,9 @@ font-weight: bold;</string>
   <widget class="QLabel" name="label_7">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>-5</x>
      <y>80</y>
-     <width>16</width>
+     <width>431</width>
      <height>651</height>
     </rect>
    </property>
@@ -697,22 +697,33 @@ font-weight: bold;</string>
     <enum>Qt::Horizontal</enum>
    </property>
   </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="geometry">
+    <rect>
+     <x>90</x>
+     <y>650</y>
+     <width>221</width>
+     <height>61</height>
+    </rect>
+   </property>
+  </widget>
+  <zorder>comboBox</zorder>
+  <zorder>tabWidget</zorder>
   <zorder>lab_date</zorder>
   <zorder>lab_time</zorder>
   <zorder>label_5</zorder>
   <zorder>label_4</zorder>
-  <zorder>prime1_but</zorder>
-  <zorder>tabWidget</zorder>
-  <zorder>label_2</zorder>
-  <zorder>label_3</zorder>
-  <zorder>label</zorder>
-  <zorder>Tune_but</zorder>
-  <zorder>clean_but</zorder>
   <zorder>lbloverall</zorder>
   <zorder>label_6</zorder>
-  <zorder>comboBox_4</zorder>
   <zorder>label_7</zorder>
   <zorder>line</zorder>
+  <zorder>clean_but</zorder>
+  <zorder>Tune_but</zorder>
+  <zorder>label_3</zorder>
+  <zorder>prime1_but</zorder>
+  <zorder>label_2</zorder>
+  <zorder>label</zorder>
+  <zorder>comboBox_4</zorder>
  </widget>
  <resources/>
  <connections/>

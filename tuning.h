@@ -54,6 +54,7 @@ void loose_tip();
 public slots:
 void on_pushButton_clicked();
 void rx_surgeonName(const int &text);
+void rx_modes(const QString &text);
 
 protected:
     // Override paintEvent to draw the circular progress bar
@@ -77,6 +78,7 @@ signals:
     void sendvisibleisgnale(bool status);
     void sendfreq(int count);
     void activatemain();
+    void tx_mode(const QString &mode);
 
 
 private:
@@ -102,6 +104,7 @@ private:
         int surgeon;
         int previousGpioValue;
         bool isTuned=false;
+        QString sendmode;
 
 };
 

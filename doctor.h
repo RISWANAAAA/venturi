@@ -28,7 +28,7 @@ public:
    void onSurgeonSelectionChanged(const QString &surgeonName);
    void setLastSelectedValue();
    void receivingvalueffs(int &val0,int &val1,int &val2,int &val3);
-
+         void switchmodes();
 public slots:
 
 
@@ -142,6 +142,7 @@ private:
     bool vib_onoff=false;
    bool spealer_onoff;
 
+   QString modes;
 
 };
 

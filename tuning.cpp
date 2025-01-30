@@ -35,6 +35,7 @@ tuning::tuning(QWidget *parent) :
     ui->butTuned->setText("Tuned");
     connect(main,&MainWindow::emittuning,this,&tuning::alreadyTune);
    // ui->lblinfo->hide();
+    connect(this,&tuning::tx_mode,main,&MainWindow::performpump);
 
 }
 
@@ -299,6 +300,13 @@ void tuning::loose_tip()
     }
 }
 
+void tuning::rx_modes(const QString &text)
+{
+    qDebug()<<text<<"..............................";
+    sendmode=text;
+    qDebug()<<"the mode is reterived...................................................."<<text;
+}
+
 void tuning::updateCircle()
 {
     if (currentCircle < 13) { // Ensure we stay within the bounds (0-4)
@@ -522,6 +530,7 @@ int tuning::Tune_Phaco()
             ui->lblRTune->move(10,620);
             ui->lblRTune->setStyleSheet("image: url(:/images/information.png);background-color:transparent;");
             ui->lblinfo->setText("May Be Loose Tip");
+            ui->But_Next->setEnabled(true);
          ui->ButRTune->move(80,621);
             // Reset the text, size, and hide the label after 1 second
                    QTimer::singleShot(1000, this, [this]() {
@@ -652,6 +661,8 @@ int tuning::Tune_Phaco()
         hand->emitTuneStopPhaco();
         hand->phaco_off();
         main->show();
+        emit tx_mode(sendmode);
+
         main->ULTRASONICBUT1();
         main->activategpio();
         main->setTuneMode();
@@ -691,6 +702,8 @@ void tuning::on_But_Next_clicked()
         emit activatemain();
         main->DIATHERMYBUT();
     main->disablegpio();
+    emit tx_mode(sendmode);
+
     }
 
 if(buttonstate == "Already Tuned"){
@@ -700,6 +713,8 @@ if(buttonstate == "Already Tuned"){
     emit activatemain();
     main->ULTRASONICBUT1();
     main->activategpio();
+    emit tx_mode(sendmode);
+
 }
 
 

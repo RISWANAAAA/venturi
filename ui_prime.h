@@ -56,6 +56,7 @@ public:
     QLabel *lbloverall;
     QLabel *label_7;
     QFrame *line;
+    QComboBox *comboBox;
 
     void setupUi(QWidget *prime)
     {
@@ -362,7 +363,7 @@ public:
         lbloverall->setStyleSheet(QString::fromUtf8(""));
         label_7 = new QLabel(prime);
         label_7->setObjectName(QString::fromUtf8("label_7"));
-        label_7->setGeometry(QRect(410, 80, 16, 651));
+        label_7->setGeometry(QRect(-5, 80, 431, 651));
         label_7->setStyleSheet(QString::fromUtf8(""));
         line = new QFrame(prime);
         line->setObjectName(QString::fromUtf8("line"));
@@ -370,22 +371,26 @@ public:
         line->setStyleSheet(QString::fromUtf8("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(0, 0, 0, 255), stop:1 rgba(255, 255, 255, 255));"));
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Sunken);
+        comboBox = new QComboBox(prime);
+        comboBox->setObjectName(QString::fromUtf8("comboBox"));
+        comboBox->setGeometry(QRect(90, 650, 221, 61));
+        comboBox->raise();
+        tabWidget->raise();
         lab_date->raise();
         lab_time->raise();
         label_5->raise();
         label_4->raise();
-        prime1_but->raise();
-        tabWidget->raise();
-        label_2->raise();
-        label_3->raise();
-        label->raise();
-        Tune_but->raise();
-        clean_but->raise();
         lbloverall->raise();
         label_6->raise();
-        comboBox_4->raise();
         label_7->raise();
         line->raise();
+        clean_but->raise();
+        Tune_but->raise();
+        label_3->raise();
+        prime1_but->raise();
+        label_2->raise();
+        label->raise();
+        comboBox_4->raise();
 
         retranslateUi(prime);
 

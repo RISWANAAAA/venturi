@@ -3107,6 +3107,7 @@ public:
 "font:bold;\n"
 "background-color:transparent;"));
         MainWindow->setCentralWidget(centralwidget);
+        comboBox->raise();
         label_26->raise();
         elapsed_time_2->raise();
         elapsed_time->raise();
@@ -3117,7 +3118,6 @@ public:
         label_21->raise();
         BACKBUT->raise();
         pushButton_2->raise();
-        comboBox->raise();
         label->raise();
         tabWidget->raise();
         CI5_5->raise();
@@ -3165,7 +3165,7 @@ public:
 
         retranslateUi(MainWindow);
 
-        tabWidget->setCurrentIndex(2);
+        tabWidget->setCurrentIndex(3);
         tabWidget_2->setCurrentIndex(4);
 
 
@@ -3406,8 +3406,8 @@ public:
         CI5_5->setText(QString());
         SETTINGS_BUT_2->setText(QString());
         elapsed_time->setText(QCoreApplication::translate("MainWindow", "0:00", nullptr));
-        comboBox->setItemText(0, QCoreApplication::translate("MainWindow", "Peristaltic", nullptr));
-        comboBox->setItemText(1, QCoreApplication::translate("MainWindow", "Venturi", nullptr));
+        comboBox->setItemText(0, QCoreApplication::translate("MainWindow", "PHAPeristaltic", nullptr));
+        comboBox->setItemText(1, QCoreApplication::translate("MainWindow", "PHAVenturi", nullptr));
 
         label_9->setText(QString());
         label_16->setText(QString());

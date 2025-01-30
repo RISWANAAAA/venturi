@@ -38,6 +38,7 @@ public:
     void motoron();
     void motoroff();
     void serialnumber();
+    void switchmodes();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override; // Declaration of eventFilter
@@ -81,6 +82,7 @@ private slots:
 signals:
     void sendsignal(const QString &text);
     void sendsurgeon_tune(const int &text);
+    void sendmode(const QString &text);
 
 private:
     Ui::prime *ui;
@@ -98,6 +100,7 @@ private:
      hwhandler *hand;
      QSqlDatabase db;
      int nFsCount;
+     QString modes;
 
 };
 
